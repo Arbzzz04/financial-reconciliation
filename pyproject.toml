@@ -1,0 +1,62 @@
+# Project metadata, build configuration, and tooling (ruff + pytest) live here.
+#
+# Dependency policy:
+#   * pyproject.toml   -> declares WHAT we depend on (loose lower bounds).
+#   * requirements.txt -> pins the EXACT versions we tested with (reproducible).
+# Install for development:  pip install -r requirements.txt && pip install -e .
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "financial-reconciliation"
+version = "0.1.0"
+description = "A SQL-first financial transaction reconciliation engine built on DuckDB."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Arbaaz Ali Jaffer" }]
+dependencies = [
+    "duckdb>=1.1",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "faker>=25",
+    "streamlit>=1.36",
+    "plotly>=5.22",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "ruff>=0.5",
+]
+
+# Use the src/ layout: the importable package lives under src/recon.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests", "data", "app"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade,
+# B: flake8-bugbear, D: pydocstyle (enforces our Google docstring convention).
+select = ["E", "W", "F", "I", "UP", "B", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests are self-documenting; don't require full docstring coverage there.
+"tests/*" = ["D"]
+
+[tool.pytest.ini_options]
+# Make src/ importable in tests without needing an editable install first.
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"

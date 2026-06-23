@@ -1,0 +1,19 @@
+# Pinned dependency versions — the exact set this project was tested with.
+# Loose declarations live in pyproject.toml; this file locks them for a
+# reproducible install. Regenerate after changing dependencies.
+#
+#   pip install -r requirements.txt   # third-party libraries (this file)
+#   pip install -e .                  # the local `recon` package itself
+
+# --- Runtime ---
+duckdb==1.5.4
+pandas==3.0.3
+numpy==2.5.0
+faker==40.23.0
+streamlit==1.58.0
+plotly==6.8.0
+openpyxl==3.1.5
+
+# --- Development ---
+pytest==9.1.1
+ruff==0.15.18

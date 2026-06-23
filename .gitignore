@@ -216,3 +216,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# =====================================================================
+# Project-specific
+# =====================================================================
+
+# DuckDB database / write-ahead-log files
+*.duckdb
+*.duckdb.wal
+*.ddb
+
+# Generated synthetic data (the folder is kept via .gitkeep; its contents are not)
+/data/samples/*
+!/data/samples/.gitkeep
+
+# Exported reconciliation reports
+/reports/
