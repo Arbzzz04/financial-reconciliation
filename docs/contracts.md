@@ -57,7 +57,13 @@ it actually used, and Phase 5 derives its tolerances from them rather than guess
 |---|---|---|
 | `max_amount_delta_abs` | fee model: `pct (≈0.40% max) + fixed (£0.20)` | Largest \|`b.amount − a.amount`\| for a true 1:1 pair |
 | `max_date_shift_days` | `settlement_window_days` (3) | Largest \|business-day shift\| for a true 1:1 pair |
+| `max_fee_pct_bps` | `fee_pct_bps + fee_pct_jitter_bps` (40) | Largest fee as a share of the amount, for a *relative* tolerance |
 | `fee_pct_bps`, `fee_fixed` | fee model | Lets Phase 5 model fees explicitly if it wants |
+
+`max_amount_delta_abs` is the largest delta *observed* in the run, so it grows with
+the largest amounts drawn. A relative bound (`max_fee_pct_bps` of the amount, plus
+`fee_fixed`) is usually the better tolerance for Phase 5, because a £10 difference
+means very different things on £50 and on £5,000.
 
 **Invariant (tested):** every true `ONE_TO_ONE` non-clean pair satisfies
 `|amount_delta| ≤ max_amount_delta_abs` and `|date_shift_days| ≤ max_date_shift_days`.

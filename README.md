@@ -117,8 +117,50 @@ pip install -e .
 pytest
 ```
 
-> Most of the engine arrives in later phases; for now, `pytest` runs a smoke test
-> confirming the package imports correctly. Each phase adds runnable commands here.
+> Each phase adds runnable commands here. So far: the data generator (below) and
+> its test suite.
+
+## Generating the data
+
+Real, pre-paired reconciliation datasets are rare, so the project generates its own:
+a hidden **base set** of transactions, from which two sources that *should* agree
+are derived, each with deliberately injected discrepancies.
+
+```bash
+python data/generate_data.py                  # 2,000 transactions, seed 42
+python data/generate_data.py --n 5000 --seed 7
+python data/generate_data.py --seed-csv transactions.csv --seed-col amount=Amount
+```
+
+The same seed always produces the same data. Output goes to `data/samples/`
+(git-ignored):
+
+| File | What it is |
+| ---- | ---------- |
+| `source_a.csv` | **What the engine sees:** the internal ledger |
+| `source_b.csv` | **What the engine sees:** the bank statement |
+| `truth/ground_truth_pairs.csv` | The answer key: one row per true `(a, b)` pair |
+| `truth/record_labels.csv` | The expected status and category of every record |
+| `truth/base_transactions.csv` | The hidden base set both sources were derived from |
+| `truth/run_metadata.json` | The config used, counts by category, and tolerance bounds |
+
+What the generator injects (every rate is configurable in `GeneratorConfig`):
+
+| Discrepancy | Example | The engine must… |
+| ----------- | ------- | ---------------- |
+| Processor fee | Ledger `£230.89`, bank `£230.00` | match within a tolerance |
+| Rounding | `£208.49` vs `£208.50` | match within a tolerance |
+| Settlement delay | 1–3 **business** days later at the bank | match within a date window |
+| Reference format | `INV-398` vs `INV-000398` vs `Inv 398` | normalise before joining |
+| Missing record | In the ledger, never reaches the bank (or vice versa) | report it as unmatched |
+| Side-only record | Bank fees and interest; ledger adjustments | report it as unmatched |
+| Duplicate | The same record posted twice | flag the copy |
+| Batch settlement | 2–5 payments arrive as one bank credit for their sum | match one-to-many |
+
+Because the generator keeps the answer key, the engine's accuracy can be **measured**
+(precision, recall and F1 in Phase 6) instead of eyeballed. The generator can also
+seed amounts and descriptions from a real transactions CSV (for example a Kaggle
+dataset); the column mapping is passed in, so no particular dataset is hard-coded.
 
 ## Conventions
 
@@ -154,7 +196,7 @@ A consistent style is decided up front and applied everywhere.
 ## Roadmap
 
 - [x] **Phase 1** — Repo scaffold, `.gitignore`, README skeleton, tooling
-- [ ] **Phase 2** — Synthetic data generator (+ hidden ground truth)
+- [x] **Phase 2** — Synthetic data generator (+ hidden ground truth)
 - [ ] **Phase 3** — DuckDB setup + normalisation SQL
 - [ ] **Phase 4** — Exact match + anti-joins
 - [ ] **Phase 5** — Tolerant + duplicate + batch matching
