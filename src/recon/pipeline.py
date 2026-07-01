@@ -15,7 +15,10 @@ import duckdb
 from recon.db import run_sql_file, set_variables
 
 # The SQL passes, in the order they run.
-PASSES = ("01_normalise.sql",)
+PASSES = (
+    "01_normalise.sql",
+    "02_exact_match.sql",
+)
 
 
 def run_passes(
