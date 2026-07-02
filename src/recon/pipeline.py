@@ -18,6 +18,7 @@ from recon.db import run_sql_file, set_variables
 PASSES = (
     "01_normalise.sql",
     "02_exact_match.sql",
+    "03_unmatched.sql",
 )
 
 

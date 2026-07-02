@@ -65,3 +65,26 @@ def test_exact_pass_finds_every_clean_or_reformatted_pair(reconciled, small_run)
         )
     )
     assert _predicted(reconciled, small_run, "EXACT") == expected
+
+
+def test_anti_join_and_except_agree(reconciled):
+    anti = set(fetch(reconciled, "SELECT record_id FROM remaining_a")["record_id"])
+    via_except = set(
+        fetch(reconciled, "SELECT record_id FROM remaining_a_ids_via_except")[
+            "record_id"
+        ]
+    )
+    assert anti == via_except
+
+
+def test_every_record_is_either_matched_or_remaining(reconciled):
+    for side, column in (("a", "a_record_id"), ("b", "b_record_id")):
+        everyone = set(
+            fetch(reconciled, f"SELECT record_id FROM norm_{side}")["record_id"]
+        )
+        matched = set(fetch(reconciled, f"SELECT {column} AS id FROM matches")["id"])
+        remaining = set(
+            fetch(reconciled, f"SELECT record_id FROM remaining_{side}")["record_id"]
+        )
+        assert matched | remaining == everyone
+        assert not matched & remaining
