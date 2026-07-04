@@ -102,3 +102,18 @@ def test_exact_plus_tolerant_recover_every_one_to_one_pair(reconciled, small_run
         reconciled, small_run, "TOLERANT"
     )
     assert found == truth
+
+
+def test_duplicate_pass_flags_exactly_the_surplus_copies(reconciled, small_run):
+    canon = _canonical(small_run)
+    labels = small_run.record_labels
+    truth = labels[labels["status"] == "DUPLICATE"]
+    # Copies are interchangeable, so compare by the original each one duplicates.
+    expected = sorted(truth["duplicate_of"])
+    flagged = fetch(reconciled, "SELECT record_id, duplicate_of FROM duplicates")
+    assert sorted(flagged["duplicate_of"].map(canon)) == expected
+    # A flagged copy is never also matched.
+    matched = set(
+        fetch(reconciled, "SELECT a_record_id AS id FROM matches")["id"]
+    ) | set(fetch(reconciled, "SELECT b_record_id AS id FROM matches")["id"])
+    assert not set(flagged["record_id"]) & matched

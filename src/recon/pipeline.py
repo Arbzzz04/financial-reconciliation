@@ -20,6 +20,7 @@ PASSES = (
     "02_exact_match.sql",
     "03_unmatched.sql",
     "04_tolerant_match.sql",
+    "05_duplicates.sql",
 )
 
 
