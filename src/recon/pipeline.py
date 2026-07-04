@@ -19,6 +19,7 @@ PASSES = (
     "01_normalise.sql",
     "02_exact_match.sql",
     "03_unmatched.sql",
+    "04_tolerant_match.sql",
 )
 
 

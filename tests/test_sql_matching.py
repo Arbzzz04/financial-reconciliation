@@ -88,3 +88,17 @@ def test_every_record_is_either_matched_or_remaining(reconciled):
         )
         assert matched | remaining == everyone
         assert not matched & remaining
+
+
+def test_tolerant_matches_are_all_true_pairs(reconciled, small_run):
+    truth, _ = _truth_pairs(small_run, "ONE_TO_ONE")
+    predicted = _predicted(reconciled, small_run, "TOLERANT")
+    assert predicted and predicted <= truth
+
+
+def test_exact_plus_tolerant_recover_every_one_to_one_pair(reconciled, small_run):
+    truth, _ = _truth_pairs(small_run, "ONE_TO_ONE")
+    found = _predicted(reconciled, small_run, "EXACT") | _predicted(
+        reconciled, small_run, "TOLERANT"
+    )
+    assert found == truth
