@@ -25,7 +25,17 @@ def _truth_pairs(small_run, match_type):
 
 @pytest.fixture
 def reconciled(loaded):
-    run_passes(loaded, {"max_fee_bps": 40, "fee_fixed": 0.20, "date_window_days": 3})
+    run_passes(
+        loaded,
+        {
+            "max_fee_bps": 40,
+            "fee_fixed": 0.20,
+            "date_window_days": 3,
+            "batch_max_size": 5,
+            "batch_window_days": 10,
+            "batch_span_days": 6,
+        },
+    )
     return loaded
 
 
@@ -117,3 +127,25 @@ def test_duplicate_pass_flags_exactly_the_surplus_copies(reconciled, small_run):
         fetch(reconciled, "SELECT a_record_id AS id FROM matches")["id"]
     ) | set(fetch(reconciled, "SELECT b_record_id AS id FROM matches")["id"])
     assert not set(flagged["record_id"]) & matched
+
+
+def test_batch_pass_recovers_the_true_settlements(reconciled, small_run):
+    truth, _ = _truth_pairs(small_run, "BATCH")
+    predicted = _predicted(reconciled, small_run, "BATCH")
+    assert predicted == truth
+
+
+def test_batch_members_sum_to_their_settlement(reconciled):
+    mismatched = fetch(
+        reconciled,
+        """
+        SELECT matches.b_record_id
+        FROM matches
+        INNER JOIN norm_a ON norm_a.record_id = matches.a_record_id
+        INNER JOIN norm_b ON norm_b.record_id = matches.b_record_id
+        WHERE matches.match_pass = 'BATCH'
+        GROUP BY matches.b_record_id, norm_b.amount
+        HAVING SUM(norm_a.amount) <> norm_b.amount
+        """,
+    )
+    assert mismatched.empty

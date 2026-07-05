@@ -21,6 +21,7 @@ PASSES = (
     "03_unmatched.sql",
     "04_tolerant_match.sql",
     "05_duplicates.sql",
+    "06_batch_match.sql",
 )
 
 
