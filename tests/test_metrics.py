@@ -2,7 +2,6 @@
 
 import pandas as pd
 import pytest
-from tests.conftest import VARIABLES
 
 from recon.db import fetch
 from recon.metrics import (
@@ -43,7 +42,7 @@ def test_canonicaliser_maps_copies_to_originals():
 
 @pytest.fixture
 def run(loaded):
-    run_passes(loaded, VARIABLES)
+    run_passes(loaded)
     return loaded
 
 

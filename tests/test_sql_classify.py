@@ -1,7 +1,6 @@
 """Tests for the classification and summary pass (07_classify_report.sql)."""
 
 import pytest
-from tests.conftest import VARIABLES
 
 from recon.db import fetch
 from recon.pipeline import run_passes
@@ -9,7 +8,7 @@ from recon.pipeline import run_passes
 
 @pytest.fixture
 def results(loaded):
-    run_passes(loaded, VARIABLES)
+    run_passes(loaded)
     return loaded
 
 

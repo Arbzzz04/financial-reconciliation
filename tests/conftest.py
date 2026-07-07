@@ -5,16 +5,6 @@ import pytest
 from recon.datagen import GeneratorConfig, generate_datasets
 from recon.db import connect, load_sources
 
-# The tolerances the SQL passes read; they cover the generator's defaults.
-VARIABLES = {
-    "max_fee_bps": 40,
-    "fee_fixed": 0.20,
-    "date_window_days": 3,
-    "batch_max_size": 5,
-    "batch_window_days": 10,
-    "batch_span_days": 6,
-}
-
 
 @pytest.fixture(scope="session")
 def small_run():

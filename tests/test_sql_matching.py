@@ -25,17 +25,7 @@ def _truth_pairs(small_run, match_type):
 
 @pytest.fixture
 def reconciled(loaded):
-    run_passes(
-        loaded,
-        {
-            "max_fee_bps": 40,
-            "fee_fixed": 0.20,
-            "date_window_days": 3,
-            "batch_max_size": 5,
-            "batch_window_days": 10,
-            "batch_span_days": 6,
-        },
-    )
+    run_passes(loaded)  # library defaults: Tolerances()
     return loaded
 
 
