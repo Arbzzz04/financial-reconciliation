@@ -1,18 +1,10 @@
 """Tests for the classification and summary pass (07_classify_report.sql)."""
 
 import pytest
+from tests.conftest import VARIABLES
 
 from recon.db import fetch
 from recon.pipeline import run_passes
-
-VARIABLES = {
-    "max_fee_bps": 40,
-    "fee_fixed": 0.20,
-    "date_window_days": 3,
-    "batch_max_size": 5,
-    "batch_window_days": 10,
-    "batch_span_days": 6,
-}
 
 
 @pytest.fixture
