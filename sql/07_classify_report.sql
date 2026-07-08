@@ -150,12 +150,22 @@ SELECT
     COUNT(*) FILTER (WHERE source = 'A') AS ledger_records,
     COUNT(*) FILTER (WHERE source = 'B') AS bank_records,
     COUNT(*) FILTER (WHERE status IN ('ONE_TO_ONE', 'BATCH')) AS matched_records,
-    round(
-        COUNT(*) FILTER (WHERE status IN ('ONE_TO_ONE', 'BATCH')) / COUNT(*), 4
+    -- nullif() turns a zero denominator into NULL (no division by zero) and
+    -- coalesce() reports an empty run as 0 rather than NULL / NaN
+    coalesce(
+        round(
+            COUNT(*) FILTER (WHERE status IN ('ONE_TO_ONE', 'BATCH'))
+                / nullif(COUNT(*), 0),
+            4
+        ),
+        0
     ) AS match_rate,
     -- value reconciled: what the ledger agrees with the bank on
-    SUM(abs(amount)) FILTER (WHERE source = 'A' AND status IN ('ONE_TO_ONE', 'BATCH'))
-        AS value_reconciled,
+    coalesce(
+        SUM(abs(amount))
+            FILTER (WHERE source = 'A' AND status IN ('ONE_TO_ONE', 'BATCH')),
+        0
+    ) AS value_reconciled,
     -- value in discrepancy: everything unmatched or duplicated, plus the gaps
     -- (fees, rounding) inside matched pairs
     coalesce(SUM(abs(amount)) FILTER (WHERE status IN ('UNMATCHED', 'DUPLICATE')), 0)
