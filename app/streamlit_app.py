@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 try:
@@ -22,10 +23,22 @@ except ModuleNotFoundError:  # e.g. on Streamlit Community Cloud
 
 from recon.datagen import GeneratedData, GeneratorConfig, generate_datasets
 from recon.db import REQUIRED_COLUMNS, read_source
+from recon.metrics import classification_accuracy, score_duplicates, score_matches
 from recon.pipeline import ReconciliationResult, Tolerances, run_reconciliation
 from recon.report import report_excel_bytes
 
 st.set_page_config(page_title="Reconciliation Engine", page_icon="🧾", layout="wide")
+
+# Chart colours: one series -> slot 1; two series -> slots 1 and 2 (a pair that
+# stays distinguishable under colour-vision deficiency).
+BLUE = "#2a78d6"
+ORANGE = "#eb6834"
+STATUS_LABELS = {
+    "ONE_TO_ONE": "Matched 1:1",
+    "BATCH": "Matched in a batch",
+    "DUPLICATE": "Duplicate",
+    "UNMATCHED": "Unmatched",
+}
 
 
 @st.cache_data(show_spinner="Generating sample data…")
@@ -103,6 +116,121 @@ def headline(result: ReconciliationResult) -> None:
     cols[4].metric("Duplicates", f"{s['duplicate_records']:,}")
 
 
+def _bar(frame: pd.DataFrame, x: str, y: str, text: str, title: str):
+    """A thin horizontal bar chart in one colour, values labelled on the bars."""
+    fig = px.bar(frame, x=x, y=y, orientation="h", text=text, title=title)
+    fig.update_traces(marker_color=BLUE, textposition="outside", cliponaxis=False)
+    fig.update_layout(
+        yaxis={"categoryorder": "total ascending", "title": None},
+        xaxis={"title": None, "showgrid": True},
+        margin={"l": 10, "r": 40, "t": 50, "b": 10},
+        bargap=0.35,
+        height=max(260, 34 * len(frame) + 90),
+    )
+    return fig
+
+
+def overview_tab(result: ReconciliationResult) -> None:
+    """Charts: status breakdown, categories by count and value, value over time."""
+    records = result.results
+    status = (
+        records["status"].map(STATUS_LABELS).value_counts().rename_axis("status")
+    ).reset_index(name="records")
+    status["label"] = [f"{n:,} ({n / len(records):.0%})" for n in status["records"]]
+    st.plotly_chart(
+        _bar(status, "records", "status", "label", "Where every record ended up"),
+        theme="streamlit",
+    )
+
+    categories = result.by_category.copy()
+    categories["value_label"] = [f"£{v:,.0f}" for v in categories["total_value"]]
+    left, right = st.columns(2)
+    left.plotly_chart(
+        _bar(categories, "records", "category", "records", "Categories by count"),
+        theme="streamlit",
+    )
+    right.plotly_chart(
+        _bar(
+            categories, "total_value", "category", "value_label", "Categories by value"
+        ),
+        theme="streamlit",
+    )
+
+    weekly = records.assign(
+        week=pd.to_datetime(records["txn_date"]).dt.to_period("W").dt.start_time,
+        outcome=records["status"]
+        .isin(["ONE_TO_ONE", "BATCH"])
+        .map({True: "Reconciled", False: "Unreconciled"}),
+        value=records["amount"].astype(float).abs(),
+    )
+    weekly = weekly.groupby(["week", "outcome"], as_index=False)["value"].sum()
+    fig = px.bar(
+        weekly,
+        x="week",
+        y="value",
+        color="outcome",
+        title="Reconciled vs unreconciled value, by week",
+        color_discrete_map={"Reconciled": BLUE, "Unreconciled": ORANGE},
+        category_orders={"outcome": ["Reconciled", "Unreconciled"]},
+    )
+    fig.update_layout(
+        xaxis_title=None,
+        yaxis_title="Value (£)",
+        legend_title=None,
+        bargap=0.25,
+        margin={"l": 10, "r": 10, "t": 50, "b": 10},
+    )
+    st.plotly_chart(fig, theme="streamlit")
+
+
+def accuracy_panel(result: ReconciliationResult, truth: GeneratedData) -> None:
+    """Precision, recall and F1 against the sample data's hidden ground truth."""
+    matches = score_matches(
+        result.matches, truth.ground_truth_pairs, truth.record_labels
+    )
+    duplicates = score_duplicates(result.duplicates, truth.record_labels)
+    classification = classification_accuracy(result.results, truth.record_labels)
+    st.subheader("Accuracy against the hidden ground truth")
+    cols = st.columns(4)
+    cols[0].metric("Precision", f"{matches['overall'].precision:.2%}")
+    cols[1].metric("Recall", f"{matches['overall'].recall:.2%}")
+    cols[2].metric("F1", f"{matches['overall'].f1:.4f}")
+    cols[3].metric(
+        "Records classified correctly", f"{classification['category_accuracy']:.2%}"
+    )
+    table = pd.DataFrame(
+        {
+            name: score.as_dict()
+            for name, score in {
+                "All matches": matches["overall"],
+                "One-to-one": matches["ONE_TO_ONE"],
+                "Batch settlements": matches["BATCH"],
+                "Duplicate detection": duplicates,
+            }.items()
+        }
+    ).T
+    table = table.rename(
+        columns={
+            "true_positives": "Correct",
+            "false_positives": "Wrong",
+            "false_negatives": "Missed",
+            "precision": "Precision",
+            "recall": "Recall",
+            "f1": "F1",
+        }
+    )
+    percent = st.column_config.NumberColumn(format="percent")
+    st.dataframe(
+        table,
+        column_config={
+            "_index": "Pass",
+            "Precision": percent,
+            "Recall": percent,
+            "F1": st.column_config.NumberColumn(format="%.4f"),
+        },
+    )
+
+
 def records_tab(result: ReconciliationResult) -> None:
     """A filterable table of every record and its outcome."""
     records = result.results
@@ -140,8 +268,14 @@ def main() -> None:
 
     result = reconcile(source_a, source_b, tolerances)
     headline(result)
+    if truth is not None:
+        accuracy_panel(result, truth)
 
-    records, pairs, about = st.tabs(["Records", "Matched pairs", "How it works"])
+    overview, records, pairs, about = st.tabs(
+        ["Overview", "Records", "Matched pairs", "How it works"]
+    )
+    with overview:
+        overview_tab(result)
     with records:
         records_tab(result)
     with pairs:

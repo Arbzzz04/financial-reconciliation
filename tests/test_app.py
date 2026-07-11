@@ -11,7 +11,8 @@ def test_app_runs_on_sample_data():
     app = AppTest.from_file(APP, default_timeout=120).run()
     assert not app.exception
     labels = [metric.label for metric in app.metric]
-    assert "Match rate" in labels
+    assert {"Match rate", "Precision", "Recall", "F1"} <= set(labels)
+    assert [tab.label for tab in app.tabs][:2] == ["Overview", "Records"]
 
 
 def test_app_prompts_for_uploads():
