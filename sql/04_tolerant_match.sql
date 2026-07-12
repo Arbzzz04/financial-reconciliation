@@ -16,7 +16,8 @@
 --           days allow +2 extra, because a 3-business-day delay from a Friday
 --           lands 5 calendar days later.
 --   reference: equal after normalisation, or a near-identical typo
---           (Jaro-Winkler similarity >= 0.92 with the same prefix).
+--           (Jaro-Winkler similarity >= 0.92 with the same prefix) when the
+--           amount agrees to the penny.
 --
 -- One ledger record can sit within range of several bank records, so candidates
 -- are ranked from BOTH sides and only "mutual best" pairs are kept.
@@ -41,12 +42,16 @@ candidates AS (
         -- range condition on date (settlement window, never before the ledger)
         AND date_diff('day', ledger.txn_date, bank.txn_date)
             BETWEEN 0 AND getvariable('date_window_days') + 2
-        -- the reference must agree, allowing for a small typo
+        -- the reference must agree, allowing for a small typo -- but a typo is
+        -- only trusted when the amount agrees to the penny: a near-identical
+        -- reference AND a near-identical amount is two weak signals, not one
+        -- strong one (PAY-834 at £150.25 is not PAY-824 at £150.81)
         AND (
             ledger.norm_ref = bank.norm_ref
             OR (
                 left(ledger.norm_ref, 3) = left(bank.norm_ref, 3)
                 AND jaro_winkler_similarity(ledger.norm_ref, bank.norm_ref) >= 0.92
+                AND abs(bank.amount - ledger.amount) <= 0.01
             )
         )
 ),

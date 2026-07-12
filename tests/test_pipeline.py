@@ -63,3 +63,29 @@ def test_reconciliation_is_deterministic(small_run):
     second = run_reconciliation(small_run.source_a, small_run.source_b)
     pd.testing.assert_frame_equal(first.results, second.results)
     pd.testing.assert_frame_equal(first.matches, second.matches)
+
+
+def _pair(a_ref, a_amount, b_ref, b_amount):
+    def frame(prefix, ref, amount, day):
+        return pd.DataFrame(
+            {
+                "record_id": [f"{prefix}-1"],
+                "reference": [ref],
+                "amount": [amount],
+                "txn_date": [day],
+                "currency": ["GBP"],
+                "description": ["payout"],
+            }
+        )
+
+    a = frame("A", a_ref, a_amount, "2024-01-26")
+    b = frame("B", b_ref, b_amount, "2024-01-29")
+    return run_reconciliation(a, b).matches
+
+
+def test_reference_typo_matches_only_when_the_amount_agrees():
+    # Regression: PAY-834 / PAY-824 with a 56p gap were once matched as a "fee".
+    assert _pair("PAY-834", "-150.25", "PAY-824", "-150.81").empty
+    # A genuine typo with the same amount still matches.
+    typo = _pair("PAY-834", "-150.25", "PAY-843", "-150.25")
+    assert list(typo["match_pass"]) == ["TOLERANT"]
