@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "financial-reconciliation"
-version = "1.0.0"
+version = "1.0.1"
 description = "A SQL-first financial transaction reconciliation engine built on DuckDB."
 readme = "README.md"
 requires-python = ">=3.11"

@@ -199,5 +199,6 @@ def classification_accuracy(
         aligned = actual.index.intersection(predicted.index)
         sizes = actual.loc[aligned].map(len)
         correct = (predicted.loc[aligned] == actual.loc[aligned]) * sizes
-        accuracy[f"{column}_accuracy"] = round(correct.sum() / sizes.sum(), 4)
+        # float() so callers get a plain number, not a NumPy scalar
+        accuracy[f"{column}_accuracy"] = float(round(correct.sum() / sizes.sum(), 4))
     return accuracy

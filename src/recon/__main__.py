@@ -15,7 +15,7 @@ import pandas as pd
 
 from recon.metrics import classification_accuracy, score_duplicates, score_matches
 from recon.pipeline import Tolerances, run_reconciliation
-from recon.report import export_report, headline_table
+from recon.report import export_report, formatted_headline_table
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -41,16 +41,32 @@ def main(argv: list[str] | None = None) -> None:
         else Tolerances()
     )
     result = run_reconciliation(args.source_a, args.source_b, tolerances)
-    print(headline_table(result).to_string(index=False))
+    print(formatted_headline_table(result).to_string(index=False))
 
     if args.truth:
         pairs = pd.read_csv(args.truth / "ground_truth_pairs.csv")
         labels = pd.read_csv(args.truth / "record_labels.csv")
         print("\nAccuracy against ground truth:")
-        for name, score in score_matches(result.matches, pairs, labels).items():
-            print(f"  matches ({name}): {score.as_dict()}")
-        print(f"  duplicates: {score_duplicates(result.duplicates, labels).as_dict()}")
-        print(f"  classification: {classification_accuracy(result.results, labels)}")
+        scores = score_matches(result.matches, pairs, labels)
+        scores["DUPLICATES"] = score_duplicates(result.duplicates, labels)
+        names = {
+            "overall": "All matches",
+            "ONE_TO_ONE": "One-to-one",
+            "BATCH": "Batch settlements",
+            "DUPLICATES": "Duplicate detection",
+        }
+        for key, score in scores.items():
+            print(
+                f"  {names[key]:<20} precision {score.precision:7.2%}  "
+                f"recall {score.recall:7.2%}  F1 {score.f1:.4f}  "
+                f"({score.true_positives:,} correct, {score.false_positives:,} wrong, "
+                f"{score.false_negatives:,} missed)"
+            )
+        accuracy = classification_accuracy(result.results, labels)
+        print(
+            f"  {'Classification':<20} status {accuracy['status_accuracy']:.2%}  "
+            f"category {accuracy['category_accuracy']:.2%}"
+        )
 
     if args.out:
         print(f"\nReport written to {export_report(result, args.out)}")

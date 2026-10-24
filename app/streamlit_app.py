@@ -33,6 +33,14 @@ st.set_page_config(page_title="Reconciliation Engine", page_icon="🧾", layout=
 # stays distinguishable under colour-vision deficiency).
 BLUE = "#2a78d6"
 ORANGE = "#eb6834"
+# Display formats for the record and pair tables: dates without a time, and
+# money always to two decimal places (the data itself is untouched).
+MONEY = st.column_config.NumberColumn(format="%.2f")
+TABLE_FORMATS = {
+    "txn_date": st.column_config.DateColumn(format="YYYY-MM-DD"),
+    "amount": MONEY,
+    "amount_delta": MONEY,
+}
 STATUS_LABELS = {
     "ONE_TO_ONE": "Matched 1:1",
     "BATCH": "Matched in a batch",
@@ -249,7 +257,7 @@ def records_tab(result: ReconciliationResult) -> None:
         pattern = "|".join(categories)
         shown = shown[shown["category"].str.contains(pattern, regex=True)]
     st.caption(f"{len(shown):,} of {len(records):,} records")
-    st.dataframe(shown, hide_index=True)
+    st.dataframe(shown, hide_index=True, column_config=TABLE_FORMATS)
 
 
 def main() -> None:
@@ -279,7 +287,7 @@ def main() -> None:
     with records:
         records_tab(result)
     with pairs:
-        st.dataframe(result.pairs, hide_index=True)
+        st.dataframe(result.pairs, hide_index=True, column_config=TABLE_FORMATS)
     with about:
         st.markdown(
             "1. **Normalise** references, dates and amounts\n"

@@ -104,7 +104,7 @@ Then, in order:
 python data/generate_data.py                                   # 1. make sample data
 python -m recon data/samples/source_a.csv data/samples/source_b.csv --truth data/samples/truth --out reports/report.xlsx   # 2. reconcile + score
 streamlit run app/streamlit_app.py                             # 3. explore it in a browser
-pytest                                                         # run the 89 tests
+pytest                                                         # run the 90 tests
 ```
 
 `python -m recon` works on any two CSVs with the columns `record_id, reference,
@@ -204,13 +204,13 @@ financial-reconciliation/
 ├── data/generate_data.py     # data generator CLI
 ├── scripts/benchmark.py      # accuracy + speed benchmark
 ├── docs/contracts.md         # what the generator and SQL agree on
-└── tests/                    # 89 tests: every pass, metrics, app, end to end
+└── tests/                    # 90 tests: every pass, metrics, app, end to end
 ```
 
 ## Development
 
 ```bash
-pytest                 # 89 tests, ~15 s
+pytest                 # 90 tests, ~15 s
 ruff check .           # lint (pycodestyle, pyflakes, isort, bugbear, Google docstrings)
 ruff format .          # format
 ```

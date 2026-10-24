@@ -14,4 +14,4 @@ Modules:
     metrics: Accuracy scoring (precision / recall / F1) against ground truth.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

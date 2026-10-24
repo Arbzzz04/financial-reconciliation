@@ -8,7 +8,7 @@ import pytest
 from recon.__main__ import main
 from recon.datagen import write_outputs
 from recon.pipeline import Tolerances, run_reconciliation
-from recon.report import export_report, headline_table
+from recon.report import export_report, formatted_headline_table, headline_table
 
 
 @pytest.fixture(scope="module")
@@ -63,5 +63,14 @@ def test_command_line_scores_a_generated_run(small_run, tmp_path, capsys):
         ]
     )
     printed = capsys.readouterr().out
-    assert "Match rate" in printed and "'f1': 1.0" in printed
+    assert "Match rate" in printed and "F1 1.0000" in printed
+    assert "np.float64" not in printed
     assert (tmp_path / "report.xlsx").exists()
+
+
+def test_headline_numbers_are_formatted_for_people(result):
+    shown = dict(formatted_headline_table(result).itertuples(index=False))
+    assert shown["Match rate"].endswith("%")
+    assert shown["Value reconciled"].startswith("£")
+    assert len(shown["Value reconciled"].split(".")[1]) == 2  # always 2 decimals
+    assert "." not in shown["Ledger records"]  # counts are whole numbers

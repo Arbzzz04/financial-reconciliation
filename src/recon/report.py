@@ -43,6 +43,46 @@ def headline_table(result: ReconciliationResult) -> pd.DataFrame:
     )
 
 
+def format_metric(key: str, value: float | int) -> str:
+    """Format one headline number for people to read.
+
+    Counts get thousands separators, the match rate becomes a percentage, and
+    money gets a currency sign and exactly two decimal places.
+
+    Args:
+        key: The summary key, e.g. ``"match_rate"``.
+        value: Its raw value.
+
+    Returns:
+        The display string, e.g. ``"91.6%"`` or ``"£114,956.52"``.
+    """
+    if key == "match_rate":
+        return f"{value:.1%}"
+    if key.startswith("value_"):
+        return f"£{value:,.2f}"
+    return f"{value:,.0f}"
+
+
+def formatted_headline_table(result: ReconciliationResult) -> pd.DataFrame:
+    """The headline table with every value formatted for display.
+
+    ``headline_table`` keeps raw numbers (so the Excel report stays sortable and
+    summable); this version is for printing.
+
+    Args:
+        result: A reconciliation run.
+
+    Returns:
+        A DataFrame with ``metric`` and ``value`` columns, both strings.
+    """
+    return pd.DataFrame(
+        {
+            "metric": list(HEADLINE_LABELS.values()),
+            "value": [format_metric(k, result.summary[k]) for k in HEADLINE_LABELS],
+        }
+    )
+
+
 def report_sheets(result: ReconciliationResult) -> dict[str, pd.DataFrame]:
     """The report's tables, keyed by sheet name.
 
