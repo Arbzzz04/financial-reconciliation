@@ -1,14 +1,14 @@
 # Financial Transaction Reconciliation Engine
 
-> A **SQL-first** engine that reconciles an internal **ledger** against a **bank
-> statement**: it matches every transaction it can, in tiers from strict to fuzzy,
-> and explains every difference it can't — fees, rounding, settlement delays,
-> missing records, duplicates and one-to-many batch settlements.
+This project reconciles a company's internal **ledger** against its **bank
+statement**. It identifies which transactions in the two records belong together,
+and explains every difference between them: processing fees, rounding, payment
+delays, missing entries, duplicates, and several payments settled as one.
 
-The matching logic is seven versioned **SQL** files run on **DuckDB**. A synthetic
-data generator hides a **ground-truth answer key**, so accuracy is measured with
-precision, recall and F1, not eyeballed. An interactive **Streamlit** demo puts it
-all in a browser.
+The matching logic is written in **SQL** and runs on **DuckDB**. The project also
+includes a test-data generator that records the correct answers, so the engine's
+accuracy can be measured precisely, and an interactive **Streamlit** app for
+exploring the results.
 
 ![Streamlit demo: headline metrics, accuracy against ground truth, and charts](docs/images/demo.png)
 
@@ -229,9 +229,6 @@ meaningful aliases (`ledger`, `bank`); [Conventional Commits](https://www.conven
 - [x] **Phase 6:** classification, reporting and accuracy metrics
 - [x] **Phase 7:** end-to-end tests and accuracy floors
 - [x] **Phase 8:** Streamlit demo
-
-**Next:** re-express the passes as a **dbt** project, add a **PySpark** version to
-show the approach at scale, and read sources directly from **AWS S3**.
 
 ## License
 
